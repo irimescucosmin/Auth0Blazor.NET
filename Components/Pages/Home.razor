@@ -1,11 +1,53 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-
+@inject NavigationManager Nav
 
 <PageTitle>Home</PageTitle>
 
-<AuthorizeView>
-    Hello @context.User.Identity?.Name!
-    @context.User
+<AuthorizeView Context="auth">
+    <Authorized>
+        <h1>Hello, @GetDisplayName(auth.User) 👋</h1>
+        <p>You’re signed in.</p>
+
+        <button @onclick="Logout">Logout</button>
+
+        <details style="margin-top:1rem">
+            <summary>Show my claims</summary>
+            <table>
+                <thead><tr><th style="text-align:left">Type</th><th style="text-align:left">Value</th></tr></thead>
+                <tbody>
+                @foreach (var c in auth.User.Claims)
+                {
+                    <tr><td>@c.Type</td><td>@c.Value</td></tr>
+                }
+                </tbody>
+            </table>
+        </details>
+    </Authorized>
+
+    <NotAuthorized>
+        <h1>Welcome</h1>
+        <p>You’re not signed in yet.</p>
+        <button @onclick="Login">Login</button>
+    </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    void Login()
+    {
+        var redirect = Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri));
+        Nav.NavigateTo($"/auth/login?redirectUri={redirect}", forceLoad: true);
+    }
+
+    void Logout()
+    {
+        var redirect = Uri.EscapeDataString(Nav.ToBaseRelativePath(Nav.Uri));
+        Nav.NavigateTo($"/auth/logout?redirectUri={redirect}", forceLoad: true);
+    }
+
+    static string GetDisplayName(System.Security.Claims.ClaimsPrincipal user)
+        => user.Identity?.Name
+           ?? user.FindFirst("name")?.Value
+           ?? user.FindFirst("email")?.Value
+           ?? "User";
+}

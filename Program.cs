@@ -10,7 +10,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // Razor Pages for /auth/* endpoints
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.RootDirectory = "/Components"; // Override the default root directory from /Pages to /Components
+});
 
 builder.Services.AddHttpContextAccessor();
 
@@ -23,6 +26,7 @@ builder.Services.AddAuth0WebAppAuthentication(options =>
     // If/when you need API tokens: options.Audience = "...";
 });
 
+// Override the default cookie authentication options
 builder.Services.PostConfigure<CookieAuthenticationOptions>(
     CookieAuthenticationDefaults.AuthenticationScheme,
     o =>
