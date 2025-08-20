@@ -1,0 +1,23 @@
+@page "/auth/logout"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using Auth0.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+@functions {
+    public async Task OnGetAsync()
+    {
+        var redirectUri = string.IsNullOrWhiteSpace(Request.Query["redirectUri"])
+            ? "/" // fallback
+            : Request.Query["redirectUri"].ToString();
+
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+        await HttpContext.SignOutAsync(Auth0Constants.AuthenticationScheme, new AuthenticationProperties
+        {
+            RedirectUri = redirectUri
+        });
+    }
+}
