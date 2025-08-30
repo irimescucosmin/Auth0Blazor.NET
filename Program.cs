@@ -1,5 +1,6 @@
 using Auth0.AspNetCore.Authentication;
 using Auth0Blazor.NET.Components;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -8,12 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
-// Razor Pages for /auth/* endpoints
-builder.Services.AddRazorPages(options =>
-{
-    options.RootDirectory = "/Components"; // Override the default root directory from /Pages to /Components
-});
 
 builder.Services.AddHttpContextAccessor();
 
@@ -27,13 +22,11 @@ builder.Services.AddAuth0WebAppAuthentication(options =>
 });
 
 // Override the default cookie authentication options
-builder.Services.PostConfigure<CookieAuthenticationOptions>(
-    CookieAuthenticationDefaults.AuthenticationScheme,
-    o =>
-    {
-        o.LoginPath = "/auth/login";
-        o.LogoutPath = "/auth/logout";
-    });
+builder.Services.PostConfigure<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme, o =>
+{
+    o.LoginPath = "/auth/login";
+    o.LogoutPath = "/auth/logout";
+});
 
 builder.Services.AddAuthorization();
 
@@ -57,13 +50,35 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseAntiforgery();
-
-app.MapRazorPages(); // will host /auth/login and /auth/logout (cshtml)
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+
+app.MapGet("/auth/login", async (HttpContext ctx) =>
+{
+    var redirectUri = string.IsNullOrWhiteSpace(ctx.Request.Query["redirectUrl"]) 
+        ? "/" : ctx.Request.Query["redirectUrl"].ToString();
+    
+    if (ctx.User.Identity?.IsAuthenticated == true)
+    {
+        ctx.Response.Redirect(redirectUri);
+        return;
+    }
+
+    await ctx.ChallengeAsync(Auth0Constants.AuthenticationScheme,
+        new AuthenticationProperties { RedirectUri = redirectUri });
+}).AllowAnonymous();
+
+app.MapGet("/auth/logout", async (HttpContext ctx) =>
+{
+    var redirectUri = string.IsNullOrWhiteSpace(ctx.Request.Query["redirectUrl"]) 
+        ? "/" : ctx.Request.Query["redirectUrl"].ToString();
+    await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    await ctx.SignOutAsync(Auth0Constants.AuthenticationScheme,
+        new AuthenticationProperties { RedirectUri = redirectUri });
+}).AllowAnonymous();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
+await app.RunAsync();

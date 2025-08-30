@@ -11,4 +11,9 @@
       <PackageReference Include="Auth0.AspNetCore.Authentication" Version="1.5.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Components\Pages\Auth\Login.cshtml" />
+      <_ContentIncludedByDefault Remove="Components\Pages\Auth\Logout.cshtml" />
+    </ItemGroup>
+
 </Project>
